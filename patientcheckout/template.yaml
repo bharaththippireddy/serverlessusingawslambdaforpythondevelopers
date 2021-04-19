@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  patientcheckout
+
+Globals:
+  Function:
+    Timeout: 20
+
+Resources:
+  PatientCheckoutDLQ:
+    Type: AWS::SNS::Topic
+  PatientCheckoutTopic:
+    Type: AWS::SNS::Topic
+  PatientCheckoutBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-${AWS::AccountId}-${AWS::Region}
+  PatientCheckoutFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: patient_checkout/
+      Handler: patientcheckout.lambda_handler
+      Runtime: python3.8
+      DeadLetterQueue:
+        Type: SNS
+        TargetArn: !Ref PatientCheckoutDLQ
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Sub ${AWS::StackName}-${AWS::AccountId}-${AWS::Region}
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt PatientCheckoutTopic.TopicName
+      Environment:
+        Variables:
+          PATIENT_CHECKOUT_TOPIC: !Ref PatientCheckoutTopic
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket: !Ref PatientCheckoutBucket
+            Events: s3:ObjectCreated:*
+  BillManagementFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: patient_checkout/
+      Handler: billmanagement.lambda_handler
+      Runtime: python3.8
+      Events:
+        SNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref PatientCheckoutTopic
+  ErrorHandlerFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: patient_checkout/
+      Handler: errorhandler.lambda_handler
+      Runtime: python3.8
+      Events:
+        SNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref PatientCheckoutDLQ

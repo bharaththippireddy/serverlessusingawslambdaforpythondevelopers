@@ -1,0 +1,19 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  firstlamdba
+
+  Sample SAM Template for firstlamdba
+
+Resources:
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: hello_world/
+      Handler: datatypes.cold_start_basics
+      Runtime: python3.8
+      Timeout: 7
+      Environment:
+        Variables:
+          restapiurl: http://dummyurl
+          dbname: mydb

@@ -1,0 +1,1 @@
+{"statusCode":200,"body":"\"Lamdas are super easy and cool\""}
